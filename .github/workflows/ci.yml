@@ -1,0 +1,50 @@
+name: Fider CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  fider-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --- TASK 2.1: BUILD AUTOMATION ---
+      - name: Setup Node & Go
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Build Application
+        run: |
+          npm install
+          npm run build
+          go build -v -o fider-app
+
+      # --- TASK 2.2: TEST AUTOMATION ---
+      - name: Run Tests & Coverage
+        run: |
+          npm test -- --watchAll=false
+          go test -v -coverprofile=coverage.out ./...
+          
+      - name: Upload Test Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage.out
+
+      # --- TASK 2.3: DEPLOYMENT AUTOMATION ---
+      - name: Build Staging Docker Image
+        run: |
+          docker build -t fider-staging:latest .
+          
+      - name: Verify Deployment Script
+        run: |
+          docker compose up -d
+          # Wait a few seconds to ensure it starts
+          sleep 10
+          docker ps
