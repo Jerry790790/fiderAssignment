@@ -27,9 +27,8 @@ jobs:
           
       - name: Build Application (Task 2.1)
         run: |
-          npm install
-          npm run build
-          go build -v -o fider-app
+          npm run build heroku-postbuild
+          go build -v -o fider-app main.go
 
       - name: Run Tests (Task 2.2)
         # We use 'continue-on-error' if you just need to prove the script RUNS
