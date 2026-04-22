@@ -27,7 +27,8 @@ jobs:
           
       - name: Build Application (Task 2.1)
         run: |
-          npm run heroku-postbuild
+          make build-ssr
+          make build-ui
           go build -v -o fider-app main.go
 
       - name: Run Tests (Task 2.2)
