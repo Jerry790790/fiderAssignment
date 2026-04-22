@@ -1,19 +1,53 @@
 name: Fider CI Pipeline
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   fider-automation:
     runs-on: ubuntu-latest
-    # Add this section here:
     env:
+      # This fixes the warning you saw
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # This will now run on Node 24 engine
-      
-      - name: Setup Node
+        uses: actions/checkout@v4
+
+      # --- TASK 2.1: BUILD AUTOMATION ---
+      - name: Setup Node & Go
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Your APP can still use Node 20, even if the RUNNER uses 24
+          node-version: '20'
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: Build Application
+        run: |
+          npm install
+          npm run build
+          go build -v -o fider-app
+
+      # --- TASK 2.2: TEST AUTOMATION ---
+      - name: Run Tests & Coverage
+        run: |
+          npm test -- --watchAll=false
+          go test -v -coverprofile=coverage.out ./...
+          
+      - name: Upload Test Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage.out
+
+      # --- TASK 2.3: DEPLOYMENT AUTOMATION ---
+      - name: Build and Start Docker (Staging)
+        run: |
+          docker build -t fider-staging:latest .
+          docker compose up -d
+          sleep 10
+          docker ps
